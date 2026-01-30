@@ -12,34 +12,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// SimpleMessage for basic Mattermost/Slack compatibility
 type SimpleMessage struct {
-	Text        string                 `json:"text"`
-	Channel     string                 `json:"channel,omitempty"`
-	Username    string                 `json:"username,omitempty"`
-	IconEmoji   string                 `json:"icon_emoji,omitempty"`
-	Attachments []SimpleAttachment      `json:"attachments,omitempty"`
-	Props       map[string]interface{} `json:"props,omitempty"`
+	Text       string        `json:"text"`
+	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
-// SimpleAttachment for message formatting
-type SimpleAttachment struct {
-	Fallback string        `json:"fallback"`
-	Color    string        `json:"color"`
-	Title    string        `json:"title,omitempty"`
-	Text     string        `json:"text,omitempty"`
-	Fields   []SimpleField `json:"fields,omitempty"`
-	Ts       int64         `json:"ts,omitempty"`
+type Attachment struct {
+	Fallback string `json:"fallback"`
+	Color    string `json:"color"`
+	Title    string `json:"title,omitempty"`
+	Text     string `json:"text,omitempty"`
 }
 
-// SimpleField for attachment fields
-type SimpleField struct {
-	Title string `json:"title"`
-	Value string `json:"value"`
-	Short bool   `json:"short"`
-}
-
-// MessageClient handles posting to Slack or Mattermost
 type MessageClient struct {
 	webhookURL string
 	platform   string
@@ -58,7 +42,6 @@ func NewMessageClient(webhookURL, platform string, logger *zap.Logger) *MessageC
 	}
 }
 
-// PostMessage posts a message to Slack or Mattermost
 func (mc *MessageClient) PostMessage(msg *SimpleMessage) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
@@ -87,71 +70,37 @@ func (mc *MessageClient) PostMessage(msg *SimpleMessage) error {
 	return nil
 }
 
-// BuildMessage creates a formatted message for Slack or Mattermost
 func BuildMessage(alert *GraylogAlert, cfg *Config) *SimpleMessage {
 	color := getSeverityColor(alert.GetSeverity())
-	timestamp := alert.GetTimestamp()
 	message := alert.GetDisplayMessage()
 
-	// Truncate message if too long
 	if len(message) > 500 {
 		message = message[:500] + "..."
 	}
 
-	// Build fields
-	fields := []SimpleField{
-		{
-			Title: "Severity",
-			Value: alert.GetSeverityName(),
-			Short: true,
-		},
-		{
-			Title: "Time",
-			Value: timestamp.Format(time.RFC3339),
-			Short: true,
-		},
-	}
+	severity := alert.GetSeverityName()
+	timestamp := alert.GetTimestamp()
 
+	text := fmt.Sprintf("**[%s]** %s\n**Time:** %s", severity, message, timestamp.Format(time.RFC3339))
+	
 	if alert.Source != "" {
-		fields = append(fields, SimpleField{
-			Title: "Source",
-			Value: alert.Source,
-			Short: true,
-		})
+		text += fmt.Sprintf("\n**Source:** %s", alert.Source)
 	}
-
+	
 	if alert.EventDefinitionID != "" {
-		fields = append(fields, SimpleField{
-			Title: "Event ID",
-			Value: alert.EventDefinitionID,
-			Short: true,
-		})
+		text += fmt.Sprintf("\n**Event ID:** %s", alert.EventDefinitionID)
 	}
 
-	// Determine channel
-	channel := cfg.Destination.Channel
-	if cfg.Destination.Destinations != nil {
-		if dest, exists := cfg.Destination.Destinations[alert.GetSeverity()]; exists {
-			channel = dest
-		}
-	}
-
-	// Build attachment
-	attachment := SimpleAttachment{
-		Fallback: fmt.Sprintf("[%s] %s", alert.GetSeverityName(), message),
+	attachment := Attachment{
+		Fallback: fmt.Sprintf("[%s] %s", severity, message),
 		Color:    color,
 		Title:    message,
-		Fields:   fields,
-		Ts:       timestamp.Unix(),
+		Text:     text,
 	}
 
-	// Build message
 	msg := &SimpleMessage{
-		Channel:     channel,
-		Username:    cfg.Destination.Username,
-		IconEmoji:   cfg.Destination.IconEmoji,
-		Text:        fmt.Sprintf("[%s] %s", alert.GetSeverityName(), message),
-		Attachments: []SimpleAttachment{attachment},
+		Text:        fmt.Sprintf("[%s] %s", severity, message),
+		Attachments: []Attachment{attachment},
 	}
 
 	return msg
@@ -160,16 +109,16 @@ func BuildMessage(alert *GraylogAlert, cfg *Config) *SimpleMessage {
 func getSeverityColor(severity string) string {
 	switch strings.ToLower(severity) {
 	case "0", "1":
-		return "#D62828" // Red
+		return "#D62828"
 	case "2":
-		return "#F77F00" // Orange
+		return "#F77F00"
 	case "3":
-		return "#FFB703" // Yellow
+		return "#FFB703"
 	case "4", "5":
-		return "#219EBC" // Blue
+		return "#219EBC"
 	case "6":
-		return "#023047" // Dark Blue
+		return "#023047"
 	default:
-		return "#999999" // Gray
+		return "#999999"
 	}
 }

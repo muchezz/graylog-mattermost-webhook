@@ -13,15 +13,7 @@ import (
 )
 
 type SimpleMessage struct {
-	Text       string        `json:"text"`
-	Attachments []Attachment `json:"attachments,omitempty"`
-}
-
-type Attachment struct {
-	Fallback string `json:"fallback"`
-	Color    string `json:"color"`
-	Title    string `json:"title,omitempty"`
-	Text     string `json:"text,omitempty"`
+	Text string `json:"text"`
 }
 
 type MessageClient struct {
@@ -71,36 +63,26 @@ func (mc *MessageClient) PostMessage(msg *SimpleMessage) error {
 }
 
 func BuildMessage(alert *GraylogAlert, cfg *Config) *SimpleMessage {
-	color := getSeverityColor(alert.GetSeverity())
+	severity := alert.GetSeverityName()
 	message := alert.GetDisplayMessage()
+	timestamp := alert.GetTimestamp()
 
 	if len(message) > 500 {
 		message = message[:500] + "..."
 	}
 
-	severity := alert.GetSeverityName()
-	timestamp := alert.GetTimestamp()
-
-	text := fmt.Sprintf("**[%s]** %s\n**Time:** %s", severity, message, timestamp.Format(time.RFC3339))
+	text := fmt.Sprintf("[%s] %s\nTime: %s", severity, message, timestamp.Format(time.RFC3339))
 	
 	if alert.Source != "" {
-		text += fmt.Sprintf("\n**Source:** %s", alert.Source)
+		text += fmt.Sprintf("\nSource: %s", alert.Source)
 	}
 	
 	if alert.EventDefinitionID != "" {
-		text += fmt.Sprintf("\n**Event ID:** %s", alert.EventDefinitionID)
-	}
-
-	attachment := Attachment{
-		Fallback: fmt.Sprintf("[%s] %s", severity, message),
-		Color:    color,
-		Title:    message,
-		Text:     text,
+		text += fmt.Sprintf("\nEvent ID: %s", alert.EventDefinitionID)
 	}
 
 	msg := &SimpleMessage{
-		Text:        fmt.Sprintf("[%s] %s", severity, message),
-		Attachments: []Attachment{attachment},
+		Text: text,
 	}
 
 	return msg

@@ -8,8 +8,8 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `yaml:"server"`
-	Mattermost MattermostConfig `yaml:"mattermost"`
+	Server      ServerConfig      `yaml:"server"`
+	Destination DestinationConfig `yaml:"destination"`
 }
 
 type ServerConfig struct {
@@ -17,7 +17,9 @@ type ServerConfig struct {
 	LogLevel   string `yaml:"log_level"`
 }
 
-type MattermostConfig struct {
+type DestinationConfig struct {
+	// Platform: "slack" or "mattermost"
+	Platform     string            `yaml:"platform"`
 	WebhookURL   string            `yaml:"webhook_url"`
 	Username     string            `yaml:"username"`
 	IconEmoji    string            `yaml:"icon_emoji"`
@@ -31,7 +33,8 @@ func LoadConfig() (*Config, error) {
 			ListenAddr: "0.0.0.0:8080",
 			LogLevel:   "info",
 		},
-		Mattermost: MattermostConfig{
+		Destination: DestinationConfig{
+			Platform:  "mattermost",
 			Username:  "Graylog",
 			IconEmoji: ":clipboard:",
 		},
@@ -40,7 +43,7 @@ func LoadConfig() (*Config, error) {
 	// Try to load from config file
 	configPath := os.Getenv("CONFIG_FILE")
 	if configPath == "" {
-		configPath = "/etc/graylog-mattermost-webhook/config.yaml"
+		configPath = "/etc/graylog-webhook/config.yaml"
 	}
 
 	if data, err := os.ReadFile(configPath); err == nil {
@@ -56,19 +59,25 @@ func LoadConfig() (*Config, error) {
 	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
 		cfg.Server.LogLevel = logLevel
 	}
-	if webhookURL := os.Getenv("MATTERMOST_WEBHOOK_URL"); webhookURL != "" {
-		cfg.Mattermost.WebhookURL = webhookURL
+	if platform := os.Getenv("PLATFORM"); platform != "" {
+		cfg.Destination.Platform = platform
 	}
-	if username := os.Getenv("MATTERMOST_USERNAME"); username != "" {
-		cfg.Mattermost.Username = username
+	if webhookURL := os.Getenv("WEBHOOK_URL"); webhookURL != "" {
+		cfg.Destination.WebhookURL = webhookURL
 	}
-	if channel := os.Getenv("MATTERMOST_CHANNEL"); channel != "" {
-		cfg.Mattermost.Channel = channel
+	if username := os.Getenv("USERNAME"); username != "" {
+		cfg.Destination.Username = username
+	}
+	if channel := os.Getenv("CHANNEL"); channel != "" {
+		cfg.Destination.Channel = channel
 	}
 
 	// Validate required configuration
-	if cfg.Mattermost.WebhookURL == "" {
-		return nil, fmt.Errorf("MATTERMOST_WEBHOOK_URL environment variable or config is required")
+	if cfg.Destination.WebhookURL == "" {
+		return nil, fmt.Errorf("WEBHOOK_URL environment variable or config is required")
+	}
+	if cfg.Destination.Platform != "slack" && cfg.Destination.Platform != "mattermost" {
+		return nil, fmt.Errorf("platform must be 'slack' or 'mattermost', got: %s", cfg.Destination.Platform)
 	}
 
 	return cfg, nil

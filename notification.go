@@ -12,7 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
-type MattermostMessage struct {
+// SlackMessage represents a Slack/Mattermost message
+type SlackMessage struct {
 	Channel     string       `json:"channel,omitempty"`
 	Username    string       `json:"username,omitempty"`
 	IconEmoji   string       `json:"icon_emoji,omitempty"`
@@ -20,6 +21,7 @@ type MattermostMessage struct {
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
+// Attachment represents a message attachment
 type Attachment struct {
 	Fallback   string  `json:"fallback"`
 	Color      string  `json:"color"`
@@ -30,21 +32,25 @@ type Attachment struct {
 	Timestamp  int64   `json:"ts,omitempty"`
 }
 
+// Field represents an attachment field
 type Field struct {
 	Short bool   `json:"short"`
 	Title string `json:"title"`
 	Value string `json:"value"`
 }
 
-type MattermostClient struct {
+// MessageClient handles posting to Slack or Mattermost
+type MessageClient struct {
 	webhookURL string
+	platform   string
 	httpClient *http.Client
 	logger     *zap.Logger
 }
 
-func NewMattermostClient(webhookURL string, logger *zap.Logger) *MattermostClient {
-	return &MattermostClient{
+func NewMessageClient(webhookURL, platform string, logger *zap.Logger) *MessageClient {
+	return &MessageClient{
 		webhookURL: webhookURL,
+		platform:   platform,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -52,7 +58,8 @@ func NewMattermostClient(webhookURL string, logger *zap.Logger) *MattermostClien
 	}
 }
 
-func (mc *MattermostClient) PostMessage(msg *MattermostMessage) error {
+// PostMessage posts a message to Slack or Mattermost
+func (mc *MessageClient) PostMessage(msg *SlackMessage) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
@@ -74,14 +81,14 @@ func (mc *MattermostClient) PostMessage(msg *MattermostMessage) error {
 	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("mattermost returned status %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("%s returned status %d: %s", mc.platform, resp.StatusCode, string(body))
 	}
 
 	return nil
 }
 
-// BuildMessage creates a formatted message from a Graylog alert
-func BuildMessage(alert *GraylogAlert, config *Config) *MattermostMessage {
+// BuildMessage creates a formatted message for Slack or Mattermost
+func BuildMessage(alert *GraylogAlert, cfg *Config) *SlackMessage {
 	color := getSeverityColor(alert.GetSeverity())
 	timestamp := alert.GetTimestamp()
 	message := alert.GetDisplayMessage()
@@ -129,17 +136,17 @@ func BuildMessage(alert *GraylogAlert, config *Config) *MattermostMessage {
 	}
 
 	// Determine channel
-	channel := config.Mattermost.Channel
-	if config.Mattermost.Destinations != nil {
-		if dest, exists := config.Mattermost.Destinations[alert.GetSeverity()]; exists {
+	channel := cfg.Destination.Channel
+	if cfg.Destination.Destinations != nil {
+		if dest, exists := cfg.Destination.Destinations[alert.GetSeverity()]; exists {
 			channel = dest
 		}
 	}
 
-	msg := &MattermostMessage{
+	msg := &SlackMessage{
 		Channel:     channel,
-		Username:    config.Mattermost.Username,
-		IconEmoji:   config.Mattermost.IconEmoji,
+		Username:    cfg.Destination.Username,
+		IconEmoji:   cfg.Destination.IconEmoji,
 		Text:        fmt.Sprintf("[%s] %s", alert.GetSeverityName(), message),
 		Attachments: []Attachment{attachment},
 	}

@@ -28,9 +28,10 @@ func main() {
 		logger.Fatal("Failed to load configuration", zap.Error(err))
 	}
 
-	logger.Info("Starting Graylog Mattermost Webhook",
+	logger.Info("Starting Graylog Webhook Service",
 		zap.String("version", Version),
 		zap.String("listen", cfg.Server.ListenAddr),
+		zap.String("destination", cfg.Destination.Platform),
 	)
 
 	// Initialize handler
@@ -92,7 +93,8 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "Graylog Mattermost Webhook v%s\n", Version)
+	fmt.Fprintf(w, "Graylog Webhook Service v%s\n", Version)
+	fmt.Fprintf(w, "Supports: Slack and Mattermost\n")
 	fmt.Fprintf(w, "POST /webhook - Receive Graylog alerts\n")
 	fmt.Fprintf(w, "GET  /health  - Health check\n")
 }

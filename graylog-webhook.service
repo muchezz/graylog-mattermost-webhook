@@ -1,6 +1,6 @@
 [Unit]
-Description=Graylog Mattermost Webhook Service
-Documentation=https://github.com/muchezz/graylog-mattermost-webhook
+Description=Graylog Webhook Service (Slack/Mattermost)
+Documentation=https://github.com/muchezz/graylog-webhook
 After=network.target
 Wants=network-online.target
 
@@ -10,10 +10,10 @@ User=graylog-webhook
 Group=graylog-webhook
 
 # Configuration file location
-Environment="CONFIG_FILE=/etc/graylog-mattermost-webhook/config.yaml"
+Environment="CONFIG_FILE=/etc/graylog-webhook/config.yaml"
 
 # Service startup
-ExecStart=/usr/local/bin/graylog-mattermost-webhook
+ExecStart=/usr/local/bin/graylog-webhook
 
 # Restart policy
 Restart=on-failure
@@ -24,7 +24,7 @@ StartLimitBurst=3
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=graylog-mattermost-webhook
+SyslogIdentifier=graylog-webhook
 
 # Security
 PrivateTmp=yes

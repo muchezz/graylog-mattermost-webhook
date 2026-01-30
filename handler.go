@@ -8,9 +8,9 @@ import (
 )
 
 type GraylogHandler struct {
-	config          *Config
-	logger          *zap.Logger
-	messageClient   *MessageClient
+	config        *Config
+	logger        *zap.Logger
+	messageClient *MessageClient
 }
 
 func NewGraylogHandler(cfg *Config, logger *zap.Logger) *GraylogHandler {
@@ -37,7 +37,6 @@ func (gh *GraylogHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Parse the alert
 	alert, err := ParseGraylogAlert(body)
 	if err != nil {
 		gh.logger.Error("Failed to parse Graylog alert", zap.Error(err))
@@ -51,15 +50,12 @@ func (gh *GraylogHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 		zap.String("message", truncate(alert.GetDisplayMessage(), 100)),
 	)
 
-	// Build message
 	message := BuildMessage(alert, gh.config)
 
-	// Post to Slack or Mattermost
 	if err := gh.messageClient.PostMessage(message); err != nil {
 		gh.logger.Error("Failed to post message",
 			zap.Error(err),
 			zap.String("platform", gh.config.Destination.Platform),
-			zap.String("channel", message.Channel),
 		)
 		http.Error(w, "Failed to post message", http.StatusInternalServerError)
 		return
@@ -68,7 +64,6 @@ func (gh *GraylogHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 	gh.logger.Info("Alert posted successfully",
 		zap.String("event_id", alert.EventDefinitionID),
 		zap.String("platform", gh.config.Destination.Platform),
-		zap.String("channel", message.Channel),
 	)
 
 	w.Header().Set("Content-Type", "application/json")

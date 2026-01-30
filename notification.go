@@ -13,7 +13,22 @@ import (
 )
 
 type SimpleMessage struct {
-	Text string `json:"text"`
+	Text        string        `json:"text"`
+	Attachments []Attachment  `json:"attachments,omitempty"`
+}
+
+type Attachment struct {
+	Fallback string  `json:"fallback"`
+	Color    string  `json:"color"`
+	Title    string  `json:"title,omitempty"`
+	Text     string  `json:"text,omitempty"`
+	Fields   []Field `json:"fields,omitempty"`
+}
+
+type Field struct {
+	Title string `json:"title"`
+	Value string `json:"value"`
+	Short bool   `json:"short"`
 }
 
 type MessageClient struct {
@@ -66,23 +81,71 @@ func BuildMessage(alert *GraylogAlert, cfg *Config) *SimpleMessage {
 	severity := alert.GetSeverityName()
 	message := alert.GetDisplayMessage()
 	timestamp := alert.GetTimestamp()
+	color := getSeverityColor(alert.GetSeverity())
 
 	if len(message) > 500 {
 		message = message[:500] + "..."
 	}
 
-	text := fmt.Sprintf("[%s] %s\nTime: %s", severity, message, timestamp.Format(time.RFC3339))
-	
-	if alert.Source != "" {
-		text += fmt.Sprintf("\nSource: %s", alert.Source)
-	}
-	
-	if alert.EventDefinitionID != "" {
-		text += fmt.Sprintf("\nEvent ID: %s", alert.EventDefinitionID)
+	// Build fields
+	fields := []Field{
+		{
+			Title: "Severity",
+			Value: severity,
+			Short: true,
+		},
+		{
+			Title: "Time",
+			Value: timestamp.Format(time.RFC3339),
+			Short: true,
+		},
 	}
 
+	if alert.Source != "" {
+		fields = append(fields, Field{
+			Title: "Source",
+			Value: alert.Source,
+			Short: true,
+		})
+	}
+
+	if alert.EventDefinitionID != "" {
+		fields = append(fields, Field{
+			Title: "Event ID",
+			Value: alert.EventDefinitionID,
+			Short: true,
+		})
+	}
+
+	if alert.EventTriggerID != "" {
+		fields = append(fields, Field{
+			Title: "Trigger ID",
+			Value: alert.EventTriggerID,
+			Short: true,
+		})
+	}
+
+	if alert.EventDefinitionType != "" {
+		fields = append(fields, Field{
+			Title: "Definition Type",
+			Value: alert.EventDefinitionType,
+			Short: true,
+		})
+	}
+
+	// Build attachment with details
+	attachment := Attachment{
+		Fallback: fmt.Sprintf("[%s] %s", severity, message),
+		Color:    color,
+		Title:    message,
+		Text:     fmt.Sprintf("**Alert Details**\n\n%s", message),
+		Fields:   fields,
+	}
+
+	// Main message text
 	msg := &SimpleMessage{
-		Text: text,
+		Text:        fmt.Sprintf(":warning: **[%s]** Graylog Alert", severity),
+		Attachments: []Attachment{attachment},
 	}
 
 	return msg

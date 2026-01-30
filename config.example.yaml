@@ -1,0 +1,44 @@
+# Graylog Mattermost Webhook Configuration
+
+# Server configuration
+server:
+  # Listen address and port
+  listen_addr: "0.0.0.0:8080"
+  
+  # Log level: debug, info, warn, error
+  log_level: "info"
+
+# Mattermost configuration
+mattermost:
+  # Required: Incoming webhook URL from Mattermost
+  # Create this in: System Settings → Integrations → Incoming Webhooks
+  webhook_url: "https://mattermost.example.com/hooks/your-webhook-id"
+  
+  # Bot username that appears in Mattermost
+  username: "Graylog"
+  
+  # Bot icon (emoji preferred)
+  icon_emoji: ":clipboard:"
+  # icon_url: "https://example.com/icon.png"
+  
+  # Default channel for alerts
+  channel: "#alerts"
+  
+  # Optional: Route alerts by severity to different channels
+  # Graylog severity levels:
+  #   0 = Emergency/Critical
+  #   1 = Alert
+  #   2 = Error/Critical
+  #   3 = Warning
+  #   4 = Notice
+  #   5 = Informational
+  #   6 = Debug
+  destinations:
+    "0": "#critical-alerts"      # Emergency → #critical
+    "1": "#critical-alerts"      # Alert → #critical
+    "2": "#error-alerts"         # Error → #errors
+    "3": "#warning-alerts"       # Warning → #warnings
+    "4": "#info-alerts"          # Notice/Info → #info
+    "5": "#info-alerts"          # Info → #info
+    "6": "#debug-alerts"         # Debug → #debug
+    # Falls back to default channel if severity not listed

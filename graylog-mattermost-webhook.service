@@ -1,0 +1,42 @@
+[Unit]
+Description=Graylog Mattermost Webhook Service
+Documentation=https://github.com/muchezz/graylog-mattermost-webhook
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=graylog-webhook
+Group=graylog-webhook
+
+# Configuration file location
+Environment="CONFIG_FILE=/etc/graylog-mattermost-webhook/config.yaml"
+
+# Service startup
+ExecStart=/usr/local/bin/graylog-mattermost-webhook
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=graylog-mattermost-webhook
+
+# Security
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/log
+
+# Process management
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

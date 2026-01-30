@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: graylog
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: graylog-mattermost
+  namespace: graylog
+type: Opaque
+stringData:
+  webhook-url: "https://your-mattermost-instance/hooks/your-webhook-id"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: graylog-mattermost-webhook-config
+  namespace: graylog
+data:
+  config.yaml: |
+    server:
+      listen_addr: "0.0.0.0:8080"
+      log_level: "info"
+    
+    mattermost:
+      webhook_url: "${MATTERMOST_WEBHOOK_URL}"
+      username: "Graylog"
+      icon_emoji: ":clipboard:"
+      channel: "#alerts"
+      destinations:
+        "0": "#critical-alerts"
+        "1": "#critical-alerts"
+        "2": "#error-alerts"
+        "3": "#warning-alerts"
+        "4": "#info-alerts"
+    
+    features:
+      message_format: "detailed"
+      dry_run: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graylog-mattermost-webhook
+  namespace: graylog
+  labels:
+    app: graylog-mattermost-webhook
+    version: v1
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: graylog-mattermost-webhook
+  template:
+    metadata:
+      labels:
+        app: graylog-mattermost-webhook
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: graylog-mattermost-webhook
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      
+      containers:
+      - name: webhook
+        image: ghcr.io/muchezz/graylog-mattermost-webhook:latest
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        
+        env:
+        - name: MATTERMOST_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: graylog-mattermost
+              key: webhook-url
+        - name: MATTERMOST_USERNAME
+          value: "Graylog Alerts"
+        - name: MATTERMOST_CHANNEL
+          value: "#alerts"
+        - name: LISTEN_ADDR
+          value: "0.0.0.0:8080"
+        - name: LOG_LEVEL
+          value: "info"
+        
+        volumeMounts:
+        - name: config
+          mountPath: /etc/graylog-mattermost-webhook
+          readOnly: true
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      
+      volumes:
+      - name: config
+        configMap:
+          name: graylog-mattermost-webhook-config
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - graylog-mattermost-webhook
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graylog-mattermost-webhook
+  namespace: graylog
+  labels:
+    app: graylog-mattermost-webhook
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: graylog-mattermost-webhook
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: graylog-mattermost-webhook
+  namespace: graylog
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: graylog-mattermost-webhook
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: graylog-mattermost-webhook
+  namespace: graylog

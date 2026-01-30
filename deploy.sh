@@ -51,7 +51,7 @@ cd "$WORK_DIR"
 echo -e "${YELLOW}Downloading webhook service...${NC}"
 
 # Download source files from GitHub
-REPO_URL="https://github.com/muchezz/graylog-webhook"
+REPO_URL="https://github.com/muchezz/graylog-mattermost-webhook"
 BRANCH="main"
 
 # Download each file individually (no git needed)

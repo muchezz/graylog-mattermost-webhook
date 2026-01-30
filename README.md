@@ -22,12 +22,12 @@ Replaces the unmaintained Java plugin with a simple, 10MB binary that runs as a 
 ### 1. Build the Binary
 
 ```bash
-git clone https://github.com/muchezz/graylog-webhook.git
-cd graylog-webhook
+git clone https://github.com/muchezz/graylog-mattermost-webhook.git
+cd graylog-mattermost-webhook
 make build
 ```
 
-Result: `graylog-webhook` binary (~10-15MB)
+Result: `graylog-mattermost-webhook` binary (~10-15MB)
 
 ### 2. Create Slack or Mattermost Webhook
 
@@ -62,7 +62,7 @@ destination:
 ### 4. Test
 
 ```bash
-./graylog-webhook
+./graylog-mattermost-webhook
 ```
 
 You should see:
@@ -81,8 +81,8 @@ curl http://localhost:8080/health
 
 ```bash
 sudo make install
-sudo systemctl start graylog-webhook
-sudo systemctl enable graylog-webhook
+sudo systemctl start graylog-mattermost-webhook
+sudo systemctl enable graylog-mattermost-webhook
 ```
 
 ### 6. Configure Graylog Alert
@@ -174,13 +174,13 @@ Message should appear in your Slack/Mattermost channel!
 
 ```bash
 # Check service status
-sudo systemctl status graylog-webhook
+sudo systemctl status graylog-mattermost-webhook
 
 # View logs
-sudo journalctl -u graylog-webhook -f
+sudo journalctl -u graylog-mattermost-webhook -f
 
 # Check resource usage
-ps aux | grep graylog-webhook
+ps aux | grep graylog-mattermost-webhook
 ```
 
 Expected: ~10-15MB memory, <1% CPU idle
@@ -190,14 +190,14 @@ Expected: ~10-15MB memory, <1% CPU idle
 ### Service won't start
 
 ```bash
-sudo journalctl -u graylog-webhook -n 50
+sudo journalctl -u graylog-mattermost-webhook -n 50
 ```
 
 Most common: Missing `webhook_url` in config.
 
 ### Webhook URL error
 
-Set `webhook_url` in `/etc/graylog-webhook/config.yaml` or `WEBHOOK_URL` environment variable.
+Set `webhook_url` in `/etc/graylog-mattermost-webhook/config.yaml` or `WEBHOOK_URL` environment variable.
 
 ### Alerts not appearing
 
@@ -212,7 +212,7 @@ Set `webhook_url` in `/etc/graylog-webhook/config.yaml` or `WEBHOOK_URL` environ
 
 3. Check firewall between services
 
-4. Review logs: `sudo journalctl -u graylog-webhook -f`
+4. Review logs: `sudo journalctl -u graylog-mattermost-webhook -f`
 
 ## Performance
 
@@ -230,15 +230,15 @@ Set `webhook_url` in `/etc/graylog-webhook/config.yaml` or `WEBHOOK_URL` environ
 
 ```bash
 # Copy binary and config
-sudo cp graylog-webhook /usr/local/bin/
-sudo mkdir -p /etc/graylog-webhook
-sudo cp config.yaml /etc/graylog-webhook/
+sudo cp graylog-mattermost-webhook /usr/local/bin/
+sudo mkdir -p /etc/graylog-mattermost-webhook
+sudo cp config.yaml /etc/graylog-mattermost-webhook/
 
 # Run as service
-sudo cp graylog-webhook.service /etc/systemd/system/
+sudo cp graylog-mattermost-webhook.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable graylog-webhook
-sudo systemctl start graylog-webhook
+sudo systemctl enable graylog-mattermost-webhook
+sudo systemctl start graylog-mattermost-webhook
 
 # In Graylog: http://localhost:8080/webhook
 ```
@@ -279,7 +279,7 @@ make test
 
 ```bash
 make release
-# Creates: graylog-webhook-linux-amd64, darwin-amd64, etc.
+# Creates: graylog-mattermost-webhook-linux-amd64, darwin-amd64, etc.
 ```
 
 ## License
@@ -294,10 +294,10 @@ Issues? Features? Fork and submit a PR! The code is simple and well-documented.
 
 **Ready to get started?**
 
-1. Clone: `git clone https://github.com/muchezz/graylog-webhook.git`
+1. Clone: `git clone https://github.com/muchezz/graylog-mattermost-webhook.git`
 2. Build: `make build`
 3. Configure: `cp config.example.yaml config.yaml` + edit
-4. Test: `./graylog-webhook`
+4. Test: `./graylog-mattermost-webhook`
 5. Deploy: `sudo make install`
 
 Enjoy your Graylog alerts in Slack or Mattermost! 🚀

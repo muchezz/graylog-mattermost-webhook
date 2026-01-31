@@ -12,6 +12,7 @@ Forward your Graylog alerts to Slack or Mattermost with:
 - ✅ No compilation needed on servers (pre-built binaries)
 
 ---
+<img width="1296" height="344" alt="image" src="https://github.com/user-attachments/assets/01e1252c-2d81-4b3e-8113-66c6d5e33eea" />
 
 ## Installation Methods
 
@@ -271,10 +272,6 @@ Messages include:
 | 3 | 🟡 Yellow | Warning |
 | 4-5 | 🔵 Blue | Notice/Info |
 | 6 | 🔷 Dark Blue | Debug |
-
-
-<img width="1296" height="344" alt="image" src="https://github.com/user-attachments/assets/01e1252c-2d81-4b3e-8113-66c6d5e33eea" />
-
 
 
 ### Both Slack and Mattermost

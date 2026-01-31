@@ -2,7 +2,6 @@
 
 **A lightweight Go service that forwards Graylog alerts to Slack or Mattermost.**
 
-Replaces the unmaintained Java plugin with a simple, 10MB binary that runs as a systemd service.
 
 ## Features
 

@@ -272,6 +272,11 @@ Messages include:
 | 4-5 | 🔵 Blue | Notice/Info |
 | 6 | 🔷 Dark Blue | Debug |
 
+
+<img width="1296" height="344" alt="image" src="https://github.com/user-attachments/assets/01e1252c-2d81-4b3e-8113-66c6d5e33eea" />
+
+
+
 ### Both Slack and Mattermost
 
 Use the same binary for both! Just change the config:
